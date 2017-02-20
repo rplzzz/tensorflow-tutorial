@@ -154,11 +154,21 @@ def feed_data(xin, yhatin, pkeepin):
 
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
+## variables for computing a moving average
+nbatch = 50
+acctot = 0
+ntot = 0
+r = 0.5
 for i in range(10000):
-    batch = mnist.train.next_batch(50)
+    batch = mnist.train.next_batch(nbatch)
     if i%100 == 0:
-        trn_accuracy = sess.run(accuracy, feed_dict=feed_data(batch[0], batch[1], 1.0))
-        print("step %d:\ttraining accuracy: %g" % (i, trn_accuracy))
+        trn_accuracy = sess.run(accuracy,
+                                feed_dict=feed_data(batch[0],
+                                                    batch[1], 1.0))
+        acctot = r*acctot + trn_accuracy
+        ntot = r*ntot + 1
+        accavg = acctot/ntot
+        print("step %d:\ttraining accuracy: %g" % (i, accavg))
     sess.run(train_step, feed_dict=feed_data(batch[0], batch[1], 0.5))
 
 test_accuracy = sess.run(accuracy, feed_dict=feed_data(mnist.test.images, mnist.test.labels, 1.0))
