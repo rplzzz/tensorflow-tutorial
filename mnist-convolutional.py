@@ -148,18 +148,20 @@ train_step = tf.train.AdamOptimizer(1e-4).minimize(hy)
 correct = tf.equal(tf.argmax(yhat, 1), tf.argmax(y,1))
 accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 
+## define a function to package data for input into the placeholders
+def feed_data(xin, yhatin, pkeepin):
+    return {x: xin, yhat: yhatin, pkeep: pkeepin}
+
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 for i in range(10000):
     batch = mnist.train.next_batch(50)
     if i%100 == 0:
-        trn_accuracy = sess.run(accuracy, feed_dict={x:batch[0], yhat: batch[1], pkeep: 1.0})
+        trn_accuracy = sess.run(accuracy, feed_dict=feed_data(batch[0], batch[1], 1.0))
         print("step %d:\ttraining accuracy: %g" % (i, trn_accuracy))
-    sess.run(train_step, feed_dict={x:batch[0], yhat: batch[1], pkeep: 0.5})
+    sess.run(train_step, feed_dict=feed_data(batch[0], batch[1], 0.5))
 
-test_accuracy = sess.run(accuracy, feed_dict={x: mnist.test.images,
-                                              yhat: mnist.test.labels,
-                                              pkeep: 1.0})
+test_accuracy = sess.run(accuracy, feed_dict=feed_data(mnist.test.images, mnist.test.labels, 1.0))
 print("\ntest accuracy: %g" % test_accuracy)
 
     
