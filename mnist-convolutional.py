@@ -142,24 +142,40 @@ with tf.name_scope("output"):
 ## iterations to make this work, and it will take a while, so we'll log our
 ## progress at every 100th iteration.
 
-hy = tf.reduce_mean( tf.nn.softmax_cross_entropy_with_logits(labels=yhat,
-                                                             logits=y) )
-train_step = tf.train.AdamOptimizer(1e-4).minimize(hy)
-correct = tf.equal(tf.argmax(yhat, 1), tf.argmax(y,1))
-accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+with tf.name_scope("xentropy"):
+    hy = tf.reduce_mean( tf.nn.softmax_cross_entropy_with_logits(labels=yhat,
+                                                                 logits=y) )
+
+with tf.name_scope("training"):
+    train_step = tf.train.AdamOptimizer(1e-4).minimize(hy)
+
+with tf.name_scope("accuracy"):
+    correct = tf.equal(tf.argmax(yhat, 1), tf.argmax(y,1))
+    accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+
+## collect stats for visualization.
+tf.summary.scalar('accuracy', accuracy)
+tf.summary.scalar('cross-entropy', hy)
+tf.summary.image('input', ximg, 3)
 
 ## define a function to package data for input into the placeholders
 def feed_data(xin, yhatin, pkeepin):
     return {x: xin, yhat: yhatin, pkeep: pkeepin}
 
+## output 
+summaries = tf.summary.merge_all()
+
 sess = tf.Session()
+summary_writer = tf.summary.FileWriter('logs', sess.graph)
+
+
 sess.run(tf.global_variables_initializer())
 ## variables for computing a moving average
 nbatch = 50
 acctot = 0
 ntot = 0
 r = 0.5
-for i in range(10000):
+for i in range(1000):
     batch = mnist.train.next_batch(nbatch)
     if i%100 == 0:
         trn_accuracy = sess.run(accuracy,
@@ -169,9 +185,15 @@ for i in range(10000):
         ntot = r*ntot + 1
         accavg = acctot/ntot
         print("step %d:\ttraining accuracy: %g" % (i, accavg))
+
+        ## write data to the summary logs
+        summary_iter = sess.run(summaries,
+                                feed_dict=feed_data(batch[0],
+                                                    batch[1], 1.0))
+        summary_writer.add_summary(summary_iter, i)
+
     sess.run(train_step, feed_dict=feed_data(batch[0], batch[1], 0.5))
 
 test_accuracy = sess.run(accuracy, feed_dict=feed_data(mnist.test.images, mnist.test.labels, 1.0))
 print("\ntest accuracy: %g" % test_accuracy)
 
-    
