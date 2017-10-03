@@ -2,6 +2,8 @@
 
 import tensorflow as tf
 
+import os
+
 ## Download and read in the benchmark data set
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
@@ -32,7 +34,7 @@ def wgtvar(shape, name=None):
 
 def bvar(shape, name=None):
     iv = tf.constant(0.1, shape=shape)
-    return tf.Variable(iv, name)
+    return tf.Variable(iv, name=name)
 
 ## We will use a series of convolutional layers and max pooling.  Each
 ## convolutional layer looks at a compact block of pixels (e.g. a 5x5 patch) and
@@ -165,8 +167,11 @@ def feed_data(xin, yhatin, pkeepin):
 ## output 
 summaries = tf.summary.merge_all()
 
+pid = os.getpid()
+dirname = 'logs/{}'.format(pid)
+os.makedirs(dirname)
 sess = tf.Session()
-summary_writer = tf.summary.FileWriter('logs', sess.graph)
+summary_writer = tf.summary.FileWriter(dirname, sess.graph)
 
 
 sess.run(tf.global_variables_initializer())
